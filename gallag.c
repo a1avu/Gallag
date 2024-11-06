@@ -9,6 +9,9 @@
 #define MAP_X 3
 #define MAP_Y 2
 
+int hero_x = 13;
+int hero_y = 35;
+
 typedef struct {
     int score;
     char nickname[20];        //nickname이랑 score 묶기 위한 구조체 생성
@@ -26,16 +29,58 @@ void gotoxy(int x, int y, char* s){
     printf("%s", s);
 }
 
+
+
 void inter_face();
 void map(char* nickname, int score);
+void draw_hero();
+void clear_hero();
+void move_hero();
+
 
 int main(void){
     inter_face();
-    map(player[player_i].nickname, player[player_i].score);
+    map(player[player_i].nickname, player[player_i].score);// 맵 및 히어로 소환
 
+    move_hero();
     return 0;
 }
 
+void draw_hero(int x, int y){ //x4~x22, y35,36 안에서만 움직임
+    gotoxy(x,y," ▲ ");
+    gotoxy(x,y+1,"◀□▶");
+}
+
+void clear_hero(int x, int y){
+    gotoxy(x,y,"   ");
+    gotoxy(x,y+1,"   ");
+}
+
+void move_hero(){
+    char ch;
+    while(1){
+        if(_kbhit()){
+            ch = _getch();
+            clear_hero(hero_x,hero_y);
+            
+            switch(ch){
+                case 75: 
+                    hero_x--;
+                    break;
+                case 77: 
+                    hero_x++;
+                    break;
+            }
+            if(hero_x == 22)
+                hero_x--;
+            else if(hero_x == 3)
+                hero_x++;
+            
+            draw_hero(hero_x, hero_y);
+        } 
+    }
+
+}
 
 
 void inter_face() {
@@ -74,6 +119,8 @@ void map(char *nickname, int score) {       //map함수에 파라미터 넣어�
     for (i = MAP_X; i <= MAP_WIDTH + MAP_X; i++) {
         gotoxy(i, MAP_Y + MAP_HEIGHT, "■");
     }
+
+    draw_hero(13,35); //11.06 hero 맵만들때 같이 그려지게
 
     gotoxy(42, 4, "<조작법>");
     gotoxy(40, 6, "<방향키> : →, ←, ↑, ↓");
