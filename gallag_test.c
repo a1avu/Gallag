@@ -44,6 +44,7 @@ Enemy enemies[MAXEnemies] = {{FALSE, 0, 0, 0}};
 
 Player player[11];          //추가 되는 사람은 항상 11번째 인덱스에 위치하게 했음 (어차피 출력은 10번까지 밖에 안되니)
 int player_i = 0;            //nickname의 i값 받을 전역변수
+int hero_lives = 3;  // 히어로의 목숨
 
 void removeCursor(void) //11/12 커서지우기 함수 (퍼옴)
 {
@@ -61,7 +62,7 @@ void gotoxy(int x, int y, char* s){
 }
 
 void inter_face();
-void map(char* nickname, int score);
+void map(char* nickname, int score, int lives);
 void draw_hero();
 void clear_hero();
 void move_hero();
@@ -70,12 +71,13 @@ void update_bullet();
 void spawn_enemy();
 void update_enemy();
 void check_collision();
+void game_over();
 
 int main(void){
     srand(time(NULL));  // 무작위 값을 위한 랜덤 시드 초기화
     removeCursor();
     inter_face();
-    map(player[player_i].nickname, player[player_i].score);// 맵 및 히어로 소환
+    map(player[player_i].nickname, player[player_i].score, hero_lives);// 맵 및 히어로 소환
 
     move_hero();
     return 0;
@@ -120,6 +122,20 @@ void move_hero(){
         update_bullet();//루프문안에 있으므로 계속 돌아감
         update_enemy();           // 적 상태 업데이트
         check_collision();        // 충돌 검사
+         
+         if (hero_lives <= 0) {
+            game_over();  // 게임 오버 화면 표시
+            break;
+        }
+          // 현재 목숨 상태 업데이트
+        gotoxy(40, 19, "Lives: ");
+        for (int i = 0; i < hero_lives; i++) {
+            printf("♥ ");
+        }
+        for (int i = hero_lives; i < 3; i++) {
+            printf("  ");
+        }
+
         Sleep(50);
     }
 }
@@ -166,11 +182,26 @@ void update_enemy() {
     for (int i = 0; i < MAXEnemies; i++) {
         if (enemies[i].exist) {
             gotoxy(enemies[i].x, enemies[i].y, "   ");  // 기존 위치 지우기
-            enemies[i].y++;                             // 적 아래로 이동
-            if (enemies[i].y > MAP_Y + MAP_HEIGHT) {
-                enemies[i].exist = FALSE;               // 맵 밖으로 나가면 제거
+            enemies[i].y++;  // 적 아래로 이동
+
+            // 적이 히어로와 같은 y 위치에 도달할 때
+            if (enemies[i].y == hero.y) {
+                if (abs(enemies[i].x - hero.x) <= 1) { // 히어로 위치와 가까운지 확인
+                    hero_lives--;  // 히어로의 목숨 하나 감소
+                    enemies[i].exist = FALSE;  // 적 제거
+                    if (hero_lives <= 0) {
+                        gotoxy(MAP_X + MAP_WIDTH / 2, MAP_Y + MAP_HEIGHT / 2, "Game Over");
+                        return;
+                    }
+                    continue;  // 다른 적 업데이트로 이동
+                }
+            }
+
+            // 적이 맵의 하단 경계에 닿으면 제거, 테두리는 지우지 않음
+            if (enemies[i].y > MAP_Y + MAP_HEIGHT - 1) {
+                enemies[i].exist = FALSE;
             } else {
-                switch (enemies[i].type) {              // 타입별 적 표시
+                switch (enemies[i].type) {  // 타입별 적 표시
                     case 0:
                         gotoxy(enemies[i].x, enemies[i].y, " @ ");
                         break;
@@ -184,7 +215,9 @@ void update_enemy() {
             }
         }
     }
+
     if (rand() % 10 == 0) spawn_enemy();  // 일정 확률로 적 생성
+    Sleep(200);  // 적의 이동 속도를 조절하여 천천히 내려오게 함
 }
 
 // 총알과 적의 충돌 검사 함수
@@ -198,6 +231,7 @@ void check_collision() {
                     player[player_i].score += 10;        // 점수 추가
                     gotoxy(40, 17, "score: ");
                     printf("%d", player[player_i].score);
+                    gotoxy(enemies[j].x, enemies[j].y, "   ");  // 충돌한 적 위치를 비우기 (화면에서 제거)
                     break;
                 }
             }
@@ -228,7 +262,7 @@ void inter_face() {
     system("cls");
 }
 
-void map(char *nickname, int score) {       //map함수에 파라미터 넣어줘서 gameover 시에는 status 창 전체 초기화
+void map(char *nickname, int score, int lives) {       //map함수에 파라미터 넣어줘서 gameover 시에는 status 창 전체 초기화
     int i, j;
 
     for (i = MAP_X; i <= MAP_WIDTH + MAP_X; i++) {
@@ -254,5 +288,25 @@ void map(char *nickname, int score) {       //map함수에 파라미터 넣어줘서 gameov
     gotoxy(40, 15, "nickname: ");
     printf("%s", nickname);
     gotoxy(40, 17, "score: ");
-    printf("%d", score);
+    printf("%d", score); gotoxy(40, 19, "Lives: ");
+    for (int i = 0; i < lives; i++) {
+        printf("♥ ");
+    }
+}
+
+void game_over() {
+    system("cls");
+    gotoxy(10, 10, "*************************");
+    gotoxy(10, 11, "*       GAME OVER       *");
+    gotoxy(10, 12, "*************************");
+    gotoxy(10, 14, "Press any key to restart");
+   char ch = _getch();  // 키 입력을 대기하여 게임 재시작
+     if (ch == 13) {  // Enter 키로 게임 재시작
+        hero_lives = 3;
+        player[player_i].score = 0;
+        spawn_enemy();
+        move_hero();
+    } else if (ch == 27) {  // Esc 키로 게임 종료
+        exit(0);
+    }
 }
