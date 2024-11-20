@@ -256,6 +256,7 @@ void update_enemy() {
     //Sleep(200); 지워놈 게임이 너무 버벅여서  // 적의 이동 속도를 조절하여 천천히 내려오게 함
 }
 
+
 // 총알과 적의 충돌 검사 함수
 void check_collision() {
     for (int i = 0; i < MAXBullet; i++) {
