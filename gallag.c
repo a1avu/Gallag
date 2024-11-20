@@ -1,8 +1,8 @@
 #include<stdio.h>
 #include<stdlib.h>  //rand()
-#include<time.h>    // rand°ª ÃÊ±âÈ­
+#include<time.h>    // randê°’ ì´ˆê¸°í™”
 #include<windows.h> // gotoxy
-#include<conio.h> // ÄÜ¼Ö ÀÔÃâ·Â getch()
+#include<conio.h> // ì½˜ì†” ì…ì¶œë ¥ getch()
 
 #define MAP_WIDTH 20
 #define MAP_HEIGHT 35
@@ -23,7 +23,7 @@ Hero hero = {13,35};
 
 typedef struct {
     int score;
-    char nickname[20];        //nicknameÀÌ¶û score ¹­±â À§ÇÑ ±¸Á¶Ã¼ »ı¼º
+    char nickname[20];        //nicknameì´ë‘ score ë¬¶ê¸° ìœ„í•œ êµ¬ì¡°ì²´ ìƒì„±
 } Player;
 
 typedef struct{
@@ -42,10 +42,10 @@ typedef struct {
 Bullet bullets[MAXBullet] = {{FALSE, 0, 0}, {FALSE, 0, 0}};
 Enemy enemies[MAXEnemies] = {{FALSE, 0, 0, 0}};
 
-Player player[11];          //Ãß°¡ µÇ´Â »ç¶÷Àº Ç×»ó 11¹øÂ° ÀÎµ¦½º¿¡ À§Ä¡ÇÏ°Ô ÇßÀ½ (¾îÂ÷ÇÇ Ãâ·ÂÀº 10¹ø±îÁö ¹Û¿¡ ¾ÈµÇ´Ï)
-int player_i = 0;            //nicknameÀÇ i°ª ¹ŞÀ» Àü¿ªº¯¼ö
+Player player[11];          //ì¶”ê°€ ë˜ëŠ” ì‚¬ëŒì€ í•­ìƒ 11ë²ˆì§¸ ì¸ë±ìŠ¤ì— ìœ„ì¹˜í•˜ê²Œ í–ˆìŒ (ì–´ì°¨í”¼ ì¶œë ¥ì€ 10ë²ˆê¹Œì§€ ë°–ì— ì•ˆë˜ë‹ˆ)
+int player_i = 0;            //nicknameì˜ iê°’ ë°›ì„ ì „ì—­ë³€ìˆ˜
 
-void removeCursor(void) //11/12 Ä¿¼­Áö¿ì±â ÇÔ¼ö (ÆÛ¿È)
+void removeCursor(void) //11/12 ì»¤ì„œì§€ìš°ê¸° í•¨ìˆ˜ (í¼ì˜´)
 {
     CONSOLE_CURSOR_INFO cursorInfo;
     GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
@@ -72,18 +72,18 @@ void update_enemy();
 void check_collision();
 
 int main(void){
-    srand(time(NULL));  // ¹«ÀÛÀ§ °ªÀ» À§ÇÑ ·£´ı ½Ãµå ÃÊ±âÈ­
+    srand(time(NULL));  // ë¬´ì‘ìœ„ ê°’ì„ ìœ„í•œ ëœë¤ ì‹œë“œ ì´ˆê¸°í™”
     removeCursor();
     inter_face();
-    map(player[player_i].nickname, player[player_i].score);// ¸Ê ¹× È÷¾î·Î ¼ÒÈ¯
+    map(player[player_i].nickname, player[player_i].score);// ë§µ ë° íˆì–´ë¡œ ì†Œí™˜
 
     move_hero();
     return 0;
 }
 
-void draw_hero(int x, int y){ //x4~x22, y35,36 ¾È¿¡¼­¸¸ ¿òÁ÷ÀÓ
-    gotoxy(x,y," ¡ã ");
-    gotoxy(x,y+1,"¢¸¡à¢º");
+void draw_hero(int x, int y){ //x4~x22, y35,36 ì•ˆì—ì„œë§Œ ì›€ì§ì„
+    gotoxy(x,y," â–² ");
+    gotoxy(x,y+1,"â—€â–¡â–¶");
 }
 
 void clear_hero(int x, int y){
@@ -117,16 +117,16 @@ void move_hero(){
 
             draw_hero(hero.x, hero.y); 
         }
-        update_bullet();//·çÇÁ¹®¾È¿¡ ÀÖÀ¸¹Ç·Î °è¼Ó µ¹¾Æ°¨
-        update_enemy();           // Àû »óÅÂ ¾÷µ¥ÀÌÆ®
-        check_collision();        // Ãæµ¹ °Ë»ç
+        update_bullet();//ë£¨í”„ë¬¸ì•ˆì— ìˆìœ¼ë¯€ë¡œ ê³„ì† ëŒì•„ê°
+        update_enemy();           // ì  ìƒíƒœ ì—…ë°ì´íŠ¸
+        check_collision();        // ì¶©ëŒ ê²€ì‚¬
         Sleep(50);
     }
 }
 
-void fire_bullet(){ //ÀåÀü´Ü°è¶ó°í »ı°¢ÇÏ¸é ‰Î
+void fire_bullet(){ //ì¥ì „ë‹¨ê³„ë¼ê³  ìƒê°í•˜ë©´ ëŒ
     for(int i = 0; i<MAXBullet; i++){
-        if(!bullets[i].exist){ //exist°¡ true¶ó¸é ÃÑ¾Ë ÁØºñ
+        if(!bullets[i].exist){ //existê°€ trueë¼ë©´ ì´ì•Œ ì¤€ë¹„
             bullets[i].x = hero.x + 1;
             bullets[i].y = hero.y - 1;
             bullets[i].exist = TRUE;
@@ -137,40 +137,40 @@ void fire_bullet(){ //ÀåÀü´Ü°è¶ó°í »ı°¢ÇÏ¸é ‰Î
 
 void update_bullet(){
     for(int i = 0; i<MAXBullet; i++){
-        if(bullets[i].exist){//ºÒ¸´ÀÌ Á¸ÀçÇÏ¸é
-            gotoxy(bullets[i].x, bullets[i].y, " "); //¿ø·¡ ÀÖ´ø ÀÚ¸®¸¦ Áö¿öÁÜ
+        if(bullets[i].exist){//ë¶ˆë¦¿ì´ ì¡´ì¬í•˜ë©´
+            gotoxy(bullets[i].x, bullets[i].y, " "); //ì›ë˜ ìˆë˜ ìë¦¬ë¥¼ ì§€ì›Œì¤Œ
             bullets[i].y--;
 
-            if(bullets[i].y <= MAP_Y) //¸Ê¿¡¼­ ÃÑ¾ËÀÌ ¹ş¾î³ª¸é Áö¿ö¹ö¸²
+            if(bullets[i].y <= MAP_Y) //ë§µì—ì„œ ì´ì•Œì´ ë²—ì–´ë‚˜ë©´ ì§€ì›Œë²„ë¦¼
                 bullets[i].exist = FALSE;
             else
-                gotoxy(bullets[i].x, bullets[i].y, "¨¬"); //¾Æ´Ï¸é ÃÑ¾Ë ¾ÕÀ¸·Î ÇÑÄ­ ÀüÁø
+                gotoxy(bullets[i].x, bullets[i].y, "Âº"); //ì•„ë‹ˆë©´ ì´ì•Œ ì•ìœ¼ë¡œ í•œì¹¸ ì „ì§„
         }
     }
 }
 
 void spawn_enemy() {
     for (int i = 0; i < MAXEnemies; i++) {
-        if (!enemies[i].exist) {                 // ºó Àû À§Ä¡¿¡ »ı¼º
-            enemies[i].x = MAP_X + 1 + rand() % (MAP_WIDTH - 2);  // x À§Ä¡ ·£´ı ¼³Á¤
+        if (!enemies[i].exist) {                 // ë¹ˆ ì  ìœ„ì¹˜ì— ìƒì„±
+            enemies[i].x = MAP_X + 1 + rand() % (MAP_WIDTH - 2);  // x ìœ„ì¹˜ ëœë¤ ì„¤ì •
             enemies[i].y = MAP_Y + 1;
             enemies[i].exist = TRUE;
-            enemies[i].type = rand() % 3;         // ÀûÀÇ Å¸ÀÔ ¹«ÀÛÀ§ ¼±ÅÃ (0, 1, ¶Ç´Â 2)
+            enemies[i].type = rand() % 3;         // ì ì˜ íƒ€ì… ë¬´ì‘ìœ„ ì„ íƒ (0, 1, ë˜ëŠ” 2)
             break;
         }
     }
 }
 
-// ÀûÀÇ À§Ä¡ ¾÷µ¥ÀÌÆ® ¹× È­¸é Ç¥½Ã
+// ì ì˜ ìœ„ì¹˜ ì—…ë°ì´íŠ¸ ë° í™”ë©´ í‘œì‹œ
 void update_enemy() {
     for (int i = 0; i < MAXEnemies; i++) {
         if (enemies[i].exist) {
-            gotoxy(enemies[i].x, enemies[i].y, "   ");  // ±âÁ¸ À§Ä¡ Áö¿ì±â
-            enemies[i].y++;                             // Àû ¾Æ·¡·Î ÀÌµ¿
+            gotoxy(enemies[i].x, enemies[i].y, "   ");  // ê¸°ì¡´ ìœ„ì¹˜ ì§€ìš°ê¸°
+            enemies[i].y++;                             // ì  ì•„ë˜ë¡œ ì´ë™
             if (enemies[i].y > MAP_Y + MAP_HEIGHT) {
-                enemies[i].exist = FALSE;               // ¸Ê ¹ÛÀ¸·Î ³ª°¡¸é Á¦°Å
+                enemies[i].exist = FALSE;               // ë§µ ë°–ìœ¼ë¡œ ë‚˜ê°€ë©´ ì œê±°
             } else {
-                switch (enemies[i].type) {              // Å¸ÀÔº° Àû Ç¥½Ã
+                switch (enemies[i].type) {              // íƒ€ì…ë³„ ì  í‘œì‹œ
                     case 0:
                         gotoxy(enemies[i].x, enemies[i].y, " @ ");
                         break;
@@ -184,18 +184,18 @@ void update_enemy() {
             }
         }
     }
-    if (rand() % 10 == 0) spawn_enemy();  // ÀÏÁ¤ È®·ü·Î Àû »ı¼º
+    if (rand() % 10 == 0) spawn_enemy();  // ì¼ì • í™•ë¥ ë¡œ ì  ìƒì„±
 }
 
-// ÃÑ¾Ë°ú ÀûÀÇ Ãæµ¹ °Ë»ç ÇÔ¼ö
+// ì´ì•Œê³¼ ì ì˜ ì¶©ëŒ ê²€ì‚¬ í•¨ìˆ˜
 void check_collision() {
     for (int i = 0; i < MAXBullet; i++) {
         if (bullets[i].exist) {
             for (int j = 0; j < MAXEnemies; j++) {
                 if (enemies[j].exist && bullets[i].x == enemies[j].x && bullets[i].y == enemies[j].y) {
-                    bullets[i].exist = FALSE;            // Ãæµ¹ ½Ã ÃÑ¾Ë Á¦°Å
-                    enemies[j].exist = FALSE;            // Ãæµ¹ ½Ã Àû Á¦°Å
-                    player[player_i].score += 10;        // Á¡¼ö Ãß°¡
+                    bullets[i].exist = FALSE;            // ì¶©ëŒ ì‹œ ì´ì•Œ ì œê±°
+                    enemies[j].exist = FALSE;            // ì¶©ëŒ ì‹œ ì  ì œê±°
+                    player[player_i].score += 10;        // ì ìˆ˜ ì¶”ê°€
                     gotoxy(40, 17, "score: ");
                     printf("%d", player[player_i].score);
                     break;
@@ -210,42 +210,42 @@ void inter_face() {
     int i, j;
 
     for (i = MAP_X; i <= MAP_WIDTH + MAP_X; i++) {
-        gotoxy(i, MAP_Y, "¡á");
+        gotoxy(i, MAP_Y, "â– ");
     }
     for (j = MAP_Y + 1; j <= MAP_HEIGHT + MAP_Y; j++) {
-        gotoxy(MAP_X, j, "¡á");
-        gotoxy(MAP_X + MAP_WIDTH, j, "¡á");
+        gotoxy(MAP_X, j, "â– ");
+        gotoxy(MAP_X + MAP_WIDTH, j, "â– ");
     }
     for (i = MAP_X; i <= MAP_WIDTH + MAP_X; i++) {
-        gotoxy(i, MAP_Y + MAP_HEIGHT, "¡á");
+        gotoxy(i, MAP_Y + MAP_HEIGHT, "â– ");
     }
 
-    gotoxy(10, 15, "¡Ú °ÔÀÓ ½ÃÀÛ ¡Ú");
-    gotoxy(8, 16, "¹æÇâÅ°·Î Á¶ÀÛ ÇÕ´Ï´Ù.");
-    gotoxy(5, 17, "´Ğ³×ÀÓÀ» ÀÔ·ÂÇÏ¸é °ÔÀÓÀÌ ½ÃÀÛµË´Ï´Ù.");
+    gotoxy(10, 15, "â˜… ê²Œì„ ì‹œì‘ â˜…");
+    gotoxy(8, 16, "ë°©í–¥í‚¤ë¡œ ì¡°ì‘ í•©ë‹ˆë‹¤.");
+    gotoxy(5, 17, "ë‹‰ë„¤ì„ì„ ì…ë ¥í•˜ë©´ ê²Œì„ì´ ì‹œì‘ë©ë‹ˆë‹¤.");
     gotoxy(6, 19, "nickname : ");
     scanf("%s", player[player_i].nickname);
     system("cls");
 }
 
-void map(char *nickname, int score) {       //mapÇÔ¼ö¿¡ ÆÄ¶ó¹ÌÅÍ ³Ö¾îÁà¼­ gameover ½Ã¿¡´Â status Ã¢ ÀüÃ¼ ÃÊ±âÈ­
+void map(char *nickname, int score) {       //mapí•¨ìˆ˜ì— íŒŒë¼ë¯¸í„° ë„£ì–´ì¤˜ì„œ gameover ì‹œì—ëŠ” status ì°½ ì „ì²´ ì´ˆê¸°í™”
     int i, j;
 
     for (i = MAP_X; i <= MAP_WIDTH + MAP_X; i++) {
-        gotoxy(i, MAP_Y, "¡á");
+        gotoxy(i, MAP_Y, "â– ");
     }
     for (j = MAP_Y + 1; j <= MAP_HEIGHT + MAP_Y; j++) {
-        gotoxy(MAP_X, j, "¡á");
-        gotoxy(MAP_X + MAP_WIDTH, j, "¡á");
+        gotoxy(MAP_X, j, "â– ");
+        gotoxy(MAP_X + MAP_WIDTH, j, "â– ");
     }
     for (i = MAP_X; i <= MAP_WIDTH + MAP_X; i++) {
-        gotoxy(i, MAP_Y + MAP_HEIGHT, "¡á");
+        gotoxy(i, MAP_Y + MAP_HEIGHT, "â– ");
     }
 
-    draw_hero(13,35); //11.06 hero ¸Ê¸¸µé¶§ °°ÀÌ ±×·ÁÁö°Ô
+    draw_hero(13,35); //11.06 hero ë§µë§Œë“¤ë•Œ ê°™ì´ ê·¸ë ¤ì§€ê²Œ
 
-    gotoxy(42, 4, "<Á¶ÀÛ¹ı>");
-    gotoxy(40, 6, "<¹æÇâÅ°> : ¡ç, ¡æ");
+    gotoxy(42, 4, "<ì¡°ì‘ë²•>");
+    gotoxy(40, 6, "<ë°©í–¥í‚¤> : â†, â†’");
     gotoxy(40, 7, "<Esc> : exit");
     gotoxy(40, 8, " <P> : pause");
     gotoxy(40, 9, " <e> : real exit game");
