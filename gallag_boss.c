@@ -11,6 +11,7 @@
 
 #define MAXEnemies 5
 #define MAXBullet 5
+#define BOSSBullet 6
 #define TRUE 1
 #define FALSE 0
 
@@ -41,6 +42,7 @@ typedef struct {
     int exist;
     int x;
     int y;
+    int origin_life;
     int life;
     int direction;
 }Boss;
@@ -48,7 +50,8 @@ typedef struct {
 Hero hero = {13,35};
 Bullet bullets[MAXBullet] = {{FALSE, 0, 0}, {FALSE, 0, 0}, {FALSE, 0, 0}, {FALSE, 0, 0}, {FALSE, 0, 0}};
 Enemy enemies[MAXEnemies] = {{FALSE, 0, 0, 0}};
-Boss boss = {FALSE, (MAP_X + MAP_WIDTH)/2 - 1, MAP_Y +1, 100, 0};
+Boss boss = {FALSE, (MAP_X + MAP_WIDTH)/2 - 1, MAP_Y +1, 0, 0, 0};
+Bullet boss_bullets[BOSSBullet] = {{FALSE, 0, 0}, {FALSE, 0, 0}, {FALSE, 0, 0}, {FALSE, 0, 0}, {FALSE, 0, 0}, {FALSE, 0, 0}};
 
 Player player[11];          //추가 되는 사람은 항상 11번째 인덱스에 위치하게 했음 (어차피 출력은 10번까지 밖에 안되니)
 int player_i = 0;            //nickname의 i값 받을 전역변수
@@ -78,11 +81,13 @@ void fire_bullet();
 void update_bullet();
 void spawn_enemy();
 void update_enemy();
-int draw_boss(int, int);
+void draw_boss(int, int);
 void erase_boss();
 void boss_update();
 void check_collision();
 void game_over();
+void boss_fire_bullet();
+void boss_update_bullet();
 
 int main(void){
     srand(time(NULL));  // 무작위 값을 위한 랜덤 시드 초기화
@@ -107,16 +112,13 @@ void clear_hero(int x, int y){
 void move_hero() {
     const DWORD HERO_UPDATE_INTERVAL = 50;   // 히어로 입력 업데이트 주기 (50ms)
     const DWORD ENEMY_UPDATE_INTERVAL = 200; // 적 업데이트 주기 (200ms)
-    const DWORD BOSS_UPDATE_INTERVAL = 5000; // 보스 생성 주기(5초)
     const DWORD BULLET_UPDATE_INTERVAL = 100; // 총알 업데이트 주기 (100ms)
-    const DWORD BOSS_MOVE_INTERNAL = 100;   //보스 움직이는 주기 (100ms)
+
 
     DWORD lastHeroUpdate = GetTickCount();   // 히어로 입력 마지막 업데이트 시간
     DWORD lastEnemyUpdate = GetTickCount();  // 적 업데이트 마지막 업데이트 시간
-    DWORD for_bossUpdate = GetTickCount(); // 보스 생성을 위한 시간
     DWORD lastBulletUpdate = GetTickCount(); // 총알 업데이트를 위한 시간
-    DWORD lastBossUpdate = GetTickCount(); //보스 움직이는 시간
-
+    
     char ch;
 
     int game_running = 1;
@@ -156,86 +158,46 @@ void move_hero() {
         // **적 및 게임 상태 업데이트 (200ms 간격)**
         if (currentTime - lastEnemyUpdate >= ENEMY_UPDATE_INTERVAL) {
             lastEnemyUpdate = currentTime;
-            
             check_collision();
-
-            update_enemy();
-            
-
-            // 히어로 생명 확인
-            if (hero_lives <= 0) {
-                game_over();
-
-                // 게임 종료 또는 재시작 여부 확인
-                char choice = _getch();
-                if (choice == 'e') {
-                    exit(0);
-                }
-
-                // 상태 초기화
-                hero_lives = 3;
-                player[player_i].score = 0;
-                spawn_enemy();
-                inter_face();
-                map(player[player_i].nickname, player[player_i].score, hero_lives);
-                continue;
-            }
-
-            // 현재 목숨 표시
-            gotoxy(40, 19, "Lives: ");
-            for (int i = 0; i < hero_lives; i++) {
-                printf("♥ ");
-            }
-            for (int i = hero_lives; i < 3; i++) {
-                printf("  ");
-            }
+            update_enemy(); 
         }
 
-        //현재 시간 - 보스 업데이트를 위해 기록한 시간 = 1초 라면 
-        if (currentTime - for_bossUpdate >= BOSS_UPDATE_INTERVAL) {
-            
-            check_collision();
+        //보스 생성 그냥 하나로 묶음 -> 오류가 너무 많아서 갈아 엎어버림
+        boss_update();
 
-            if(currentTime - lastBulletUpdate >= BOSS_MOVE_INTERNAL){
-                draw_boss(boss.x, boss.y);//보스 그림
-                boss_update();                
-            }
-
-            // 히어로 생명 확인
-            if (hero_lives <= 0) {
-                game_over();
-
-                // 게임 종료 또는 재시작 여부 확인
-                char choice = _getch();
-                if (choice == 'e') {
-                    exit(0);
-                }
-
-                // 상태 초기화
-                hero_lives = 3;
-                player[player_i].score = 0;
-                spawn_enemy();
-                inter_face();
-                map(player[player_i].nickname, player[player_i].score, hero_lives);
-                continue;
-            }
-
-            // 현재 목숨 표시
-            gotoxy(40, 19, "Lives: ");
-            for (int i = 0; i < hero_lives; i++) {
-                printf("♥ ");
-            }
-            for (int i = hero_lives; i < 3; i++) {
-                printf("  ");
-            }
-
-        }
-            
+        // 총알 이동
         if (currentTime - lastBulletUpdate >= BULLET_UPDATE_INTERVAL) {
             lastBulletUpdate = currentTime;
             update_bullet();
         }
 
+        // 히어로 생명 확인
+        if (hero_lives <= 0) {
+            game_over();
+
+            // 게임 종료 또는 재시작 여부 확인
+            char choice = _getch();
+            if (choice == 'e') {
+                exit(0);
+            }
+
+            // 상태 초기화
+            hero_lives = 3;
+            player[player_i].score = 0;
+            spawn_enemy();
+            inter_face();
+            map(player[player_i].nickname, player[player_i].score, hero_lives);
+            continue;
+        }
+        
+        // 현재 목숨 표시
+        gotoxy(40, 19, "Lives: ");
+        for (int i = 0; i < hero_lives; i++) {
+            printf("♥ ");
+        }
+        for (int i = hero_lives; i < 3; i++) {
+            printf("  ");
+        }
     }
 }
 
@@ -266,6 +228,54 @@ void update_bullet(){
     }
 }
 
+void boss_fire_bullet(){ //위의 코드 재사용 해볼거임 // 장전단계
+    for(int i = 0; i<BOSSBullet; i++){
+        if(!boss_bullets[i].exist){ //exist가 true라면 총알 준비
+
+            if(i % 3 == 0){ // 왼쪽 대포
+                boss_bullets[i].x = boss.x + 1;
+                boss_bullets[i].y = boss.y + 5;
+            }
+            else if(i % 3 == 1){// 가운데 대포
+                boss_bullets[i].x = boss.x + 4;
+                boss_bullets[i].y = boss.y + 5;
+            }
+            else if(i % 3 == 2){// 오른쪽대포
+                boss_bullets[i].x = boss.x + 7;
+                boss_bullets[i].y = boss.y + 5;
+            }
+
+            boss_bullets[i].exist = TRUE;
+            if(i==2)   // 한번 브레이크를 걸어줘야 동시에 3발이 나가고 총 화면에 6발까지 찍힘
+                break;
+        }
+    }
+}
+
+void boss_update_bullet(){
+    const DWORD BOSS_BULLET_UPDATE_INTERVAL = 100; //총알 이동주기(200ms);
+    static DWORD lastBossBulletUpdate = 0; //총알 이동관련
+
+    DWORD currentTime = GetTickCount();
+
+    if (currentTime - lastBossBulletUpdate < BOSS_BULLET_UPDATE_INTERVAL) {
+        return; // 총알 이동 주기가 아직 도래하지 않았으면 반환
+    }
+    lastBossBulletUpdate = currentTime;
+
+    for(int i = 0; i<BOSSBullet; i++){
+        if(boss_bullets[i].exist){//불릿이 존재하면
+            gotoxy(boss_bullets[i].x, boss_bullets[i].y, " "); //원래 있던 자리를 지워줌
+            boss_bullets[i].y++;
+
+            if(boss_bullets[i].y >= MAP_Y+MAP_HEIGHT) //맵에서 총알이 벗어나면 지워버림
+                boss_bullets[i].exist = FALSE;
+            else
+                gotoxy(boss_bullets[i].x, boss_bullets[i].y, "|"); //아니면 총알 앞으로 한칸 전진
+        }
+    }
+}
+
 void spawn_enemy() {
     for (int i = 0; i < MAXEnemies; i++) {
         if (!enemies[i].exist) {                 // 빈 적 위치에 생성
@@ -282,7 +292,7 @@ void spawn_enemy() {
 void update_enemy() {
     for (int i = 0; i < MAXEnemies; i++) {
         if (enemies[i].exist) {
-            gotoxy(enemies[i].x, enemies[i].y, "   ");  // 기존 위치 지우기
+            gotoxy(enemies[i].x, enemies[i].y, " ");  // 기존 위치 지우기
             enemies[i].y++;  // 적 아래로 이동
 
             // 적이 히어로와 같은 y 위치에 도달할 때
@@ -304,13 +314,13 @@ void update_enemy() {
             } else {
                 switch (enemies[i].type) {  // 타입별 적 표시
                     case 0:
-                        gotoxy(enemies[i].x, enemies[i].y, " @ ");
+                        gotoxy(enemies[i].x, enemies[i].y, "@");
                         break;
                     case 1:
-                        gotoxy(enemies[i].x, enemies[i].y, " # ");
+                        gotoxy(enemies[i].x, enemies[i].y, "#");
                         break;
                     case 2:
-                        gotoxy(enemies[i].x, enemies[i].y, " & ");
+                        gotoxy(enemies[i].x, enemies[i].y, "&");
                         break;
                 }
             }
@@ -321,16 +331,15 @@ void update_enemy() {
     //Sleep(200); 지워놈 게임이 너무 버벅여서  // 적의 이동 속도를 조절하여 천천히 내려오게 함
 }
 
-int draw_boss(int x, int y) {
-    boss.exist = TRUE;
+void draw_boss(int x, int y) {
 
-    gotoxy(x, y,   "   ███████   "); // 맨끝
-    gotoxy(x, y+1, " ███████████ "); 
-    gotoxy(x, y+2, "███   █   ███"); // 가운데 대포+ 다리 연결부
-    gotoxy(x, y+3, "████     ████"); // 다리 연결
-    gotoxy(x, y+4, " ██       ██ "); // 다리쪽 대포
-
-    return boss.exist;
+    if(boss.exist == TRUE){
+        gotoxy(x, y,   "   ███████   "); // 맨끝
+        gotoxy(x, y+1, " ███████████ "); 
+        gotoxy(x, y+2, "███   █   ███"); // 가운데 대포+ 다리 연결부
+        gotoxy(x, y+3, "████     ████"); // 다리 연결
+        gotoxy(x, y+4, " ██       ██ "); // 다리쪽 대포        
+    }
 }
 
 void erase_boss(int x, int y) {
@@ -341,50 +350,97 @@ void erase_boss(int x, int y) {
     gotoxy(x, y+4, "             "); // 다리쪽 대포
 }
 
-void boss_update() {
-    // 왼쪽은 0, 오른쪽은 1
-    if(boss.life == 0){
-        boss.exist = FALSE;
-        erase_boss(boss.x, boss.y);
+void boss_update() { // 11.24 얘 갈아 엎음 진짜 말도 안되게 오래 걸림
 
-        gotoxy(25, 5, "             "); // 점수판 지움
+    const DWORD BOSS_MOVE_INTERNAL = 100;   // 보스 이동 주기 (100ms)
+    const DWORD BOSS_UPDATE_INTERVAL = 10000; // 보스 생성 주기 (10초)
+    const DWORD BOSS_FIRE_INTERVAL = 50; //보스 총알 발사주기 (50ms)
+
+    static DWORD lastBossUpdate = 0; // 보스 이동 시간 관리
+    static DWORD for_bossUpdate = 0; // 마지막으로 보스 생성된 시점
+    static DWORD lastBossFire = 0; //마지막으로 총알 발사한 시점
+
+
+    DWORD currentTime = GetTickCount();
+
+    //보스 생성 첫번째가 10초뒤에 실행되기 위함 
+            //-> static이여서 게임 시작하는 딱 처음에만 0임
+    if (for_bossUpdate == 0) {
+        for_bossUpdate = currentTime; // 게임 시작 시점으로 초기화
     }
 
-    if (boss.exist) {
+    // 보스 생성 조건 확인
+    //만약 보스가 없고, 현재시간 - 보스 업데이트를 위한 시간 >= 10초 
+    if (!boss.exist && (currentTime - for_bossUpdate >= BOSS_UPDATE_INTERVAL)) {
+        for_bossUpdate = currentTime;  // 보스 생성 시간 갱신
+        boss.exist = TRUE;             // 보스 활성화
+        boss.origin_life += 100;       // 보스 체력 증가
+        boss.life = boss.origin_life;  // 보스 체력 설정
+        boss.x = (MAP_X + MAP_WIDTH) / 2 - 1; // 보스 초기 위치 설정
+        boss.y = MAP_Y + 1;
+        draw_boss(boss.x, boss.y);     // 보스 그리기
+        gotoxy(25, 5, "BOSS SPAWNED  ");
+    }
+
+    // 보스 이동 조건 확인
+    if (boss.exist && (currentTime - lastBossUpdate >= BOSS_MOVE_INTERNAL)) {
+        lastBossUpdate = currentTime;
+
         erase_boss(boss.x, boss.y);
 
-        // 경계에 도달했을 때만 방향 전환
-        if (boss.x < MAP_X + 2) {
+        // 경계에 도달했을 때 방향 전환
+        if (boss.x <= MAP_X + 2) {
             boss.direction = 1; // 오른쪽으로 방향 변경
-        }
-        else if (boss.x > MAP_X + MAP_WIDTH - 8) {
+        } else if (boss.x >= MAP_X + MAP_WIDTH - 8) {
             boss.direction = 0; // 왼쪽으로 방향 변경
         }
 
-        // 현재 방향에 따라 이동
+        // 방향에 따라 이동
         switch (boss.direction) {
-            case 0: // 왼쪽으로 이동
-                boss.x--;
-                break;
-            case 1: // 오른쪽으로 이동
-                boss.x++;
-                break;
-            default:
-                break;
+            case 0: boss.x--; break;  // 왼쪽 이동
+            case 1: boss.x++; break;  // 오른쪽 이동
         }
 
         draw_boss(boss.x, boss.y);
+
+        // 보스 체력 확인
+        if (boss.life <= 0) {
+            boss.exist = FALSE; // 보스 제거
+            erase_boss(boss.x, boss.y);
+            boss.x = (MAP_X + MAP_WIDTH) / 2 - 1; // 보스 초기 위치로 복귀
+            boss.y = MAP_Y + 1;
+            boss.life = 0;            // 체력 초기화
+            boss.direction = 0;       // 방향 초기화
+            gotoxy(25, 5, "BOSS DEFEATED  ");
+            for_bossUpdate = currentTime; // 보스 생성 시간 갱신
+
+            for(int i = 0; i<BOSSBullet; i++){
+                boss_bullets[i].exist = FALSE;
+                gotoxy(boss_bullets[i].x, boss_bullets[i].y, " ");
+                fire_bullet(); //총알 전체 초기화
+            }
+        }
     }
+
+    if(boss.exist && currentTime - lastBossFire >= BOSS_FIRE_INTERVAL){
+        lastBossFire = currentTime;
+        boss_fire_bullet();
+    }
+
+    boss_update_bullet();
+
 }
+
 
 // 총알과 적의 충돌 검사 함수
 void check_collision() {
-
     for (int i = 0; i < MAXBullet; i++) {
         if (bullets[i].exist) {
-            //쫄병
+            // 쫄병 충돌 검사
             for (int j = 0; j < MAXEnemies; j++) {
-                if (enemies[j].exist && bullets[i].x == enemies[j].x && bullets[i].y == enemies[j].y) {
+                if (enemies[j].exist &&
+                    bullets[i].x == enemies[j].x &&
+                    bullets[i].y == enemies[j].y) {
                     bullets[i].exist = FALSE;            // 충돌 시 총알 제거
                     enemies[j].exist = FALSE;            // 충돌 시 적 제거
                     player[player_i].score += 10;        // 점수 추가
@@ -394,26 +450,42 @@ void check_collision() {
                     break;
                 }
             }
-            //보스 
 
-            //if(boss.x+3~ boss.x+9 사이와 boss.y+1~boss.y+3 사이에서 bullet.x와 bullet.y가 있으면
-            //-> 단점은 히트박스가 너무 큼 근데 이렇게 안하면
-            // 날개, 몸통을 분리해서 해야함 시간안에 완성 못할듯            
-            if(boss.exist &&
-             ((bullets[i].x >= boss.x+3)&&(bullets[i].x <= boss.x+9)) &&
-             ((bullets[i].y >= boss.y)&&(bullets[i].y+1 <= boss.x+3))){
+            // 보스 충돌 검사
+            if (boss.exist &&
+                (bullets[i].x >= boss.x + 3 && bullets[i].x <= boss.x + 9) &&
+                (bullets[i].y >= boss.y && bullets[i].y <= boss.y + 3)) {
                 bullets[i].exist = FALSE;
-                gotoxy(bullets[i].x, bullets[i].y, " "); //총알 지우기
-                player[player_i].score += 20;
-                boss.life -= 10; //체력 -10, 점수 +20 씩
+                gotoxy(bullets[i].x, bullets[i].y, " "); // 총알 지우기
+                player[player_i].score += 20;           // 점수 증가
+                boss.life -= 10;                        // 보스 체력 감소
                 gotoxy(40, 17, "score: ");
                 printf("%d", player[player_i].score);
                 gotoxy(25, 5, "BOSS LIFE: ");
-                printf("%d", boss.life);
+                printf("%d  ", boss.life);
             }
         }
     }
+
+    // 히어로와 보스 총알 충돌 검사
+    for (int k = 0; k < BOSSBullet; k++) {
+        if (boss_bullets[k].exist &&
+            (boss_bullets[k].x >= hero.x && boss_bullets[k].x <= hero.x + 1) &&
+            (boss_bullets[k].y >= hero.y && boss_bullets[k].y <= hero.y + 1)) {
+            hero_lives--;                         // 히어로 목숨 감소
+            boss_bullets[k].exist = FALSE;        // 보스 총알 제거
+            gotoxy(boss_bullets[k].x, boss_bullets[k].y, " "); // 총알 지우기
+
+            if (hero_lives <= 0) {
+                game_over();  // 게임 오버 처리
+                return;
+            }
+
+            break;//충돌처리 후 루프 탈출 시켜서 중복으로 체력깎이는거 방지
+        }
+    }
 }
+
 
 void inter_face() {
     system("cls");
