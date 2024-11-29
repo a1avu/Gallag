@@ -37,8 +37,10 @@ typedef struct {
     int y;
     int type; //적의 모양
     int stop; // 적이 멈췄는지 여부를 나타내는 변수
-     int direction; // 이동 방향 추가 (0: 아래, 1: 왼쪽 대각선, 2: 오른쪽 대각선)
-    DWORD stop_time;
+    int direction; // 이동 방향 추가 (0: 아래, 1: 왼쪽 대각선, 2: 오른쪽 대각선)
+    DWORD stop_time;  // 적이 멈춘 시간
+    DWORD stop_duration; // 적이 멈추는 시간
+    int original_direction;  // 추가: 원래 이동 방향
 } Enemy;
 
 typedef struct {
@@ -203,9 +205,6 @@ void move_hero() {
         }
     }
 }
-
-
-
 void fire_bullet(){ //장전단계라고 생각하면 됌
     for(int i = 0; i<MAXBullet; i++){
         if(!bullets[i].exist){ //exist가 true라면 총알 준비
@@ -285,7 +284,10 @@ void spawn_enemy() {
             enemies[i].x = MAP_X + 1 + rand() % (MAP_WIDTH - 2);  // x 위치 랜덤 설정
             enemies[i].y = MAP_Y + 1;
             enemies[i].exist = TRUE;
-            enemies[i].type = rand() % 3;         // 적의 타입 무작위 선택 (0, 1, 또는 2)
+            enemies[i].stop = FALSE; // 적이 처음 생성되면 멈추지 않음
+            enemies[i].stop_duration = 0; // 멈춘 시간 초기화
+            enemies[i].direction = rand() % 3; //0:아래, 1:왼 대각 2: 오른 대각
+            enemies[i].type = rand() % 3;   // 적의 타입 무작위 선택 (0, 1, 또는 2)
             break;
         }
     }
@@ -301,40 +303,57 @@ void update_enemy() {
 
             // 만약 적이 멈췄다면
             if (enemies[i].stop) {
-                // 멈춘 시간이 5~10초가 지나면 아래로 이동
-                if (currentTime - enemies[i].stop_time >= (rand() % 4000 + 3000)) {
-                    enemies[i].stop = FALSE; // 다시 아래로 이동
-                } else {
-                    // 총알 발사
-                    if (rand() % 10 == 0) { // 10분의 1 확률로 총알 발사
-                        boss_fire_bullet(); // 적이 보스 총알을 발사하는 경우
-                    }
+                // 멈춘 시간이 끝났다면 이동 재개
+                if (currentTime - enemies[i].stop_time >= enemies[i].stop_duration) {
+                    enemies[i].stop = FALSE; // 멈춤 해제
                 }
-            } else {
-                // 적 아래로 이동
+            }
+
+            if (!enemies[i].stop) {
+                // 적 이동
+                int new_x = enemies[i].x;
+                int new_y = enemies[i].y;
+
                 switch (enemies[i].direction) {
-                    case 0: // 아래로 직진
-                        enemies[i].y++;
+                    case 0: // 아래로
+                        new_y++;
                         break;
                     case 1: // 왼쪽 대각선 아래로
-                        enemies[i].x--;
-                        enemies[i].y++;
+                        new_x--;
+                        new_y++;
                         break;
                     case 2: // 오른쪽 대각선 아래로
-                        enemies[i].x++;
-                        enemies[i].y++;
+                        new_x++;
+                        new_y++;
                         break;
                 }
 
-                // 벽에 닿으면 반대 방향으로 이동
-                if (enemies[i].x < MAP_X || enemies[i].x >= MAP_X + MAP_WIDTH) {
-                    enemies[i].direction = (enemies[i].direction == 1) ? 2 : 1; // 대각선 방향 반전
+                // 경계 검사: 새로운 위치가 맵의 경계를 넘지 않는지 확인
+                if (new_x < MAP_X + 1) {
+                    // 왼쪽 경계에 도달했을 경우 오른쪽으로 방향 전환
+                    enemies[i].direction = 2; // 오른쪽 대각선으로 변경
+                    new_x = MAP_X + 1; // 경계에 맞추기
+                } else if (new_x >= MAP_X + MAP_WIDTH - 1) {
+                    // 오른쪽 경계에 도달했을 경우 왼쪽으로 방향 전환
+                    enemies[i].direction = 1; // 왼쪽 대각선으로 변경
+                    new_x = MAP_X + MAP_WIDTH - 2; // 경계에 맞추기
                 }
 
-                // 적이 맵의 하단 경계에 닿으면 제거
-                if (enemies[i].y > MAP_Y + MAP_HEIGHT - 1) {
+                // 적의 y 좌표도 맵 경계를 넘는지 확인
+                if (new_y >= MAP_Y + MAP_HEIGHT) {
+                    // 하단 경계에 도달했을 경우 적 제거
                     enemies[i].exist = FALSE;
                 } else {
+                    enemies[i].x = new_x; // 유효한 위치로 업데이트
+                    enemies[i].y = new_y;
+
+                    // 적이 중간 지점에서 멈추기
+                    if (enemies[i].y >= (MAP_Y + MAP_HEIGHT / 2) && !enemies[i].stop) {
+                        enemies[i].stop = TRUE; // 적이 멈춤
+                        enemies[i].stop_time = currentTime; // 멈춘 시간 기록
+                        enemies[i].stop_duration = (rand() % 3 + 3) * 1000; // 3초에서 5초 사이 랜덤 시간
+                    }
+
                     switch (enemies[i].type) { // 타입별 적 표시
                         case 0:
                             gotoxy(enemies[i].x, enemies[i].y, "@");
@@ -353,6 +372,7 @@ void update_enemy() {
 
     if (rand() % 10 == 0) spawn_enemy(); // 일정 확률로 적 생성
 }
+
 void draw_boss(int x, int y) {
 
     if(boss.exist == TRUE){
