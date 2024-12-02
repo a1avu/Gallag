@@ -36,11 +36,7 @@ typedef struct {
     int x;
     int y;
     int type; //적의 모양
-    int stop; // 적이 멈췄는지 여부를 나타내는 변수
     int direction; // 이동 방향 추가 (0: 아래, 1: 왼쪽 대각선, 2: 오른쪽 대각선)
-    DWORD stop_time;  // 적이 멈춘 시간
-    DWORD stop_duration; // 적이 멈추는 시간
-    int original_direction;  // 추가: 원래 이동 방향
 } Enemy;
 
 typedef struct {
@@ -297,57 +293,57 @@ void update_enemy() {
 
     for (int i = 0; i < MAXEnemies; i++) {
         if (enemies[i].exist) {
-            gotoxy(enemies[i].x, enemies[i].y, " "); // 기존 위치 지우기
+            // 기존 위치를 지우기
+            gotoxy(enemies[i].x, enemies[i].y, "   "); // 기존 위치 지우기
 
-            if (!enemies[i].stop) {
-                // 적 이동
-                int new_x = enemies[i].x;
-                int new_y = enemies[i].y;
+            // 적 이동
+            int new_x = enemies[i].x;
+            int new_y = enemies[i].y;
 
-                switch (enemies[i].direction) {
-                    case 0: // 아래로
-                        new_y++;
+            switch (enemies[i].direction) {
+                case 0: // 아래로
+                    new_y++;
+                    break;
+                case 1: // 왼쪽 대각선 아래로
+                    new_x--;
+                    new_y++;
+                    break;
+                case 2: // 오른쪽 대각선 아래로
+                    new_x++;
+                    new_y++;
+                    break;
+            }
+
+            // 경계 검사: 새로운 위치가 맵의 경계를 넘지 않는지 확인
+            if (new_x < MAP_X + 1) {
+                // 왼쪽 경계에 도달했을 경우 오른쪽으로 방향 전환
+                enemies[i].direction = 2; // 오른쪽 대각선으로 변경
+                new_x = MAP_X + 1; // 경계에 맞추기
+            } else if (new_x >= MAP_X + MAP_WIDTH - 1) {
+                // 오른쪽 경계에 도달했을 경우 왼쪽으로 방향 전환
+                enemies[i].direction = 1; // 왼쪽 대각선으로 변경
+                new_x = MAP_X + MAP_WIDTH - 2; // 경계에 맞추기
+            }
+
+            // 적의 y 좌표도 맵 경계를 넘는지 확인
+            if (new_y >= MAP_Y + MAP_HEIGHT) {
+                // 하단 경계에 도달했을 경우 적 제거
+                enemies[i].exist = FALSE;
+            } else {
+                enemies[i].x = new_x; // 유효한 위치로 업데이트
+                enemies[i].y = new_y;
+
+                // 새로운 위치에 적 표시
+                switch (enemies[i].type) { // 타입별 적 표시
+                    case 0:
+                        gotoxy(enemies[i].x, enemies[i].y, "0_0");
                         break;
-                    case 1: // 왼쪽 대각선 아래로
-                        new_x--;
-                        new_y++;
+                    case 1:
+                        gotoxy(enemies[i].x, enemies[i].y, "@_@");
                         break;
-                    case 2: // 오른쪽 대각선 아래로
-                        new_x++;
-                        new_y++;
+                    case 2:
+                        gotoxy(enemies[i].x, enemies[i].y, "$_$");
                         break;
-                }
-
-                // 경계 검사: 새로운 위치가 맵의 경계를 넘지 않는지 확인
-                if (new_x < MAP_X + 1) {
-                    // 왼쪽 경계에 도달했을 경우 오른쪽으로 방향 전환
-                    enemies[i].direction = 2; // 오른쪽 대각선으로 변경
-                    new_x = MAP_X + 1; // 경계에 맞추기
-                } else if (new_x >= MAP_X + MAP_WIDTH - 1) {
-                    // 오른쪽 경계에 도달했을 경우 왼쪽으로 방향 전환
-                    enemies[i].direction = 1; // 왼쪽 대각선으로 변경
-                    new_x = MAP_X + MAP_WIDTH - 2; // 경계에 맞추기
-                }
-
-                // 적의 y 좌표도 맵 경계를 넘는지 확인
-                if (new_y >= MAP_Y + MAP_HEIGHT) {
-                    // 하단 경계에 도달했을 경우 적 제거
-                    enemies[i].exist = FALSE;
-                } else {
-                    enemies[i].x = new_x; // 유효한 위치로 업데이트
-                    enemies[i].y = new_y;
-
-                    switch (enemies[i].type) { // 타입별 적 표시
-                        case 0:
-                            gotoxy(enemies[i].x, enemies[i].y, "@");
-                            break;
-                        case 1:
-                            gotoxy(enemies[i].x, enemies[i].y, "#");
-                            break;
-                        case 2:
-                            gotoxy(enemies[i].x, enemies[i].y, "&");
-                            break;
-                    }
                 }
             }
         }
@@ -456,23 +452,24 @@ void boss_update() { // 11.24 얘 갈아 엎음 진짜 말도 안되게 오래 걸림
 
 }
 
-
 // 총알과 적의 충돌 검사 함수
 void check_collision() {
     for (int i = 0; i < MAXBullet; i++) {
         if (bullets[i].exist) {
             // 쫄병 충돌 검사
             for (int j = 0; j < MAXEnemies; j++) {
-                if (enemies[j].exist &&
-                    bullets[i].x == enemies[j].x &&
-                    bullets[i].y == enemies[j].y) {
-                    bullets[i].exist = FALSE;            // 충돌 시 총알 제거
-                    enemies[j].exist = FALSE;            // 충돌 시 적 제거
-                    player[player_i].score += 10;        // 점수 추가
-                    gotoxy(40, 17, "score: ");
-                    printf("%d", player[player_i].score);
-                    gotoxy(enemies[j].x, enemies[j].y, "   ");  // 충돌한 적 위치를 비우기 (화면에서 제거)
-                    break;
+                if (enemies[j].exist) {
+                    // 적의 위치와 크기를 고려하여 충돌 검사
+                    if ((bullets[i].x >= enemies[j].x && bullets[i].x <= enemies[j].x + 3) && 
+                        (bullets[i].y >= enemies[j].y && bullets[i].y <= enemies[j].y + 1)) {
+                        bullets[i].exist = FALSE;            // 충돌 시 총알 제거
+                        enemies[j].exist = FALSE;            // 충돌 시 적 제거
+                        player[player_i].score += 10;        // 점수 추가
+                        gotoxy(40, 17, "score: ");
+                        printf("%d", player[player_i].score);
+                        gotoxy(enemies[j].x, enemies[j].y, "   ");  // 충돌한 적 위치를 비우기 (화면에서 제거)
+                        break;
+                    }
                 }
             }
 
@@ -506,12 +503,10 @@ void check_collision() {
                 return;
             }
 
-            break;//충돌처리 후 루프 탈출 시켜서 중복으로 체력깎이는거 방지
+            break; // 충돌처리 후 루프 탈출 시켜서 중복으로 체력깎이는거 방지
         }
     }
 }
-
-
 void inter_face() {
     system("cls");
     int i, j;
