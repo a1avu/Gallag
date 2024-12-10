@@ -278,34 +278,35 @@ void boss_update_bullet(){
     }
 }
 
+// ���� ���� �� �ʱ�ȭ
 void spawn_enemy() {
     for (int i = 0; i < MAXEnemies; i++) {
-        if (!enemies[i].exist) {                 // 빈 적 위치에 생성
-            enemies[i].x = MAP_X + 1 + rand() % (MAP_WIDTH - 2);  // x 위치 랜덤 설정
+        if (!enemies[i].exist) {                 // �� �� ��ġ�� ����
+            enemies[i].x = MAP_X + 1 + rand() % (MAP_WIDTH - 2);  // x ��ġ ���� ����
             enemies[i].y = MAP_Y + 1;
             enemies[i].exist = TRUE;
-            enemies[i].stop = FALSE; // 적이 처음 생성되면 멈추지 않음
-            enemies[i].stop_duration = 0; // 멈춘 시간 초기화
-            enemies[i].direction = rand() % 3; //0:아래, 1:왼 대각 2: 오른 대각
-            enemies[i].type = rand() % 3;   // 적의 타입 무작위 선택 (0, 1, 또는 2)
+            enemies[i].stop = FALSE; // ���� ó�� �����Ǹ� ������ ����
+            enemies[i].stop_duration = 0; // ���� �ð� �ʱ�ȭ
+            enemies[i].direction = rand() % 3; //0:�Ʒ�, 1:�� �밢 2: ���� �밢
+            enemies[i].type = rand() % 3;   // ���� Ÿ�� ������ ���� (0, 1, �Ǵ� 2)
             break;
         }
     }
 }
 
-// 적의 위치 업데이트 및 화면 표시
+// ���� ��ġ ������Ʈ �� ȭ�� ǥ��
 void update_enemy() {
     DWORD currentTime = GetTickCount(); // 현재 시간 저장
 
     for (int i = 0; i < MAXEnemies; i++) {
         if (enemies[i].exist) {
-            gotoxy(enemies[i].x, enemies[i].y, " "); // 기존 위치 지우기
+            gotoxy(enemies[i].x, enemies[i].y, " "); // ���� ��ġ �����
 
-            // 만약 적이 멈췄다면
+            // ���� ���� ����ٸ�
             if (enemies[i].stop) {
-                // 멈춘 시간이 끝났다면 이동 재개
+                // ���� �ð��� �����ٸ� �̵� �簳
                 if (currentTime - enemies[i].stop_time >= enemies[i].stop_duration) {
-                    enemies[i].stop = FALSE; // 멈춤 해제
+                    enemies[i].stop = FALSE; // ���� ����
                 }
             }
 
@@ -347,11 +348,11 @@ void update_enemy() {
                     enemies[i].x = new_x; // 유효한 위치로 업데이트
                     enemies[i].y = new_y;
 
-                    // 적이 중간 지점에서 멈추기
+                    // ���� �߰� �������� ���߱�
                     if (enemies[i].y >= (MAP_Y + MAP_HEIGHT / 2) && !enemies[i].stop) {
-                        enemies[i].stop = TRUE; // 적이 멈춤
-                        enemies[i].stop_time = currentTime; // 멈춘 시간 기록
-                        enemies[i].stop_duration = (rand() % 3 + 3) * 1000; // 3초에서 5초 사이 랜덤 시간
+                        enemies[i].stop = TRUE; // ���� ����
+                        enemies[i].stop_time = currentTime; // ���� �ð� ���
+                        enemies[i].stop_duration = (rand() % 3 + 3) * 1000; // 3�ʿ��� 5�� ���� ���� �ð�
                     }
 
                     switch (enemies[i].type) { // 타입별 적 표시
