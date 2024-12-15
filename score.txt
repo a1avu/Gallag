@@ -1,0 +1,10 @@
+go 1500
+lo 1000
+ryu 900
+kim 900
+jin 700
+hong 400
+lee 300
+park 200
+kimminki 80
+das' 70
